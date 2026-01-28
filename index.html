@@ -145,17 +145,30 @@
                 navigate('game');
                 const amBat = (d.inn===1) ? (isHost ? d.p1Role==='BATTING' : d.p1Role!=='BATTING') : (isHost ? d.p1Role!=='BATTING' : d.p1Role==='BATTING');
                 const myM = isHost ? d.m1 : d.m2;
-                document.getElementById('m1').innerText = (localM !== null) ? localM : (myM === -1 ? '-' : myM);
-                document.getElementById('m2').innerText = (myM === -1) ? '-' : (isHost ? d.l2 : d.l1);
+                
+                // FIXED FLOW: If engine hasn't processed current moves yet, show what we have.
+                // If engine just reset (myM is -1), show the LAST known moves (l1/l2).
+                if(myM === -1) {
+                    document.getElementById('m1').innerText = d.l1 === '-' ? '-' : (isHost ? d.l1 : d.l2);
+                    document.getElementById('m2').innerText = d.l2 === '-' ? '-' : (isHost ? d.l2 : d.l1);
+                } else {
+                    document.getElementById('m1').innerText = (isHost ? d.m1 : d.m2) === -1 ? (localM !== null ? localM : '-') : (isHost ? d.m1 : d.m2);
+                    document.getElementById('m2').innerText = (isHost ? d.m2 : d.m1) === -1 ? '-' : (isHost ? d.m2 : d.m1);
+                }
+
                 document.getElementById('s1').innerText = isHost ? d.s1 : d.s2;
                 document.getElementById('s2').innerText = isHost ? d.s2 : d.s1;
+                
                 const lastMove = isHost ? d.l1 : d.l2;
                 if(amBat && (lastMove === 6 || lastMove === 10)) document.getElementById('s1').classList.add('score-gold');
                 else document.getElementById('s1').classList.remove('score-gold');
+                
                 document.getElementById('roleTag').innerText = amBat ? "BATTING" : "BOWLING";
                 document.getElementById('superTag').style.display = d.super ? 'block' : 'none';
                 document.getElementById('status').innerText = (myM !== -1) ? "WAITING..." : "YOUR TURN";
+                
                 if(d.tar > 0) { document.getElementById('tarTag').style.visibility = 'visible'; document.getElementById('tarTag').innerText = `TARGET: ${d.tar}`; }
+                
                 toggle('gameGrid', myM === -1);
                 if(isHost && d.m1 !== -1 && d.m2 !== -1) { localM = null; setTimeout(() => engine(d), 600); }
             }
@@ -201,18 +214,46 @@
         else { 
             let choices = ['BATTING', 'BOWLING'];
             let c = choices[Math.floor(Math.random()*2)];
-            document.getElementById('tossMsg').innerText = `CPU IS ${c}!`;
+            document.getElementById('tossMsg').innerText = `CPU CHOSE TO ${c}!`;
             cs.role = (c === 'BATTING' ? 'BOWLING' : 'BATTING');
             setTimeout(() => { navigate('game'); document.getElementById('roleTag').innerText = cs.role; }, 1200);
         } 
     }
 
     function cpuMove(n) {
-        let cn = Math.floor(Math.random()*11); cs.l1 = n; cs.l2 = cn; document.getElementById('m2').innerText = cn;
-        document.getElementById('roleTag').innerText = cs.role;
-        if(n === cn) { if(cs.inn === 1) { cs.inn = 2; cs.tar = (cs.role === 'BATTING' ? cs.s1 : cs.s2) + 1; cs.role = (cs.role==='BATTING'?'BOWLING':'BATTING'); } else renderEnd({}); }
-        else { if(cs.role === 'BATTING') { cs.s1 += (n===0?cn:n); if(n===6||n===10) document.getElementById('s1').classList.add('score-gold'); else document.getElementById('s1').classList.remove('score-gold'); } else { cs.s2 += (cn===0?n:cn); document.getElementById('s1').classList.remove('score-gold'); } if(cs.inn === 2 && (cs.role==='BATTING'?cs.s1:cs.s2) >= cs.tar) renderEnd({}); }
-        setTimeout(() => { document.getElementById('s1').innerText = cs.s1; document.getElementById('s2').innerText = cs.s2; localM = null; document.getElementById('m1').innerText = '-'; document.getElementById('m2').innerText = '-'; if(cs.tar > 0) { document.getElementById('tarTag').style.visibility = 'visible'; document.getElementById('tarTag').innerText = `TARGET: ${cs.tar}`; } document.getElementById('roleTag').innerText = cs.role; }, 800);
+        let cn = Math.floor(Math.random()*11); 
+        // Sync visual immediately
+        document.getElementById('m1').innerText = n;
+        document.getElementById('m2').innerText = cn;
+        cs.l1 = n; cs.l2 = cn; 
+
+        if(n === cn) { 
+            if(cs.inn === 1) { 
+                cs.inn = 2; cs.tar = (cs.role === 'BATTING' ? cs.s1 : cs.s2) + 1; cs.role = (cs.role==='BATTING'?'BOWLING':'BATTING'); 
+            } else renderEnd({}); 
+        } else { 
+            if(cs.role === 'BATTING') { 
+                cs.s1 += (n===0?cn:n); 
+            } else { 
+                cs.s2 += (cn===0?n:cn); 
+            } 
+            if(cs.inn === 2 && (cs.role==='BATTING'?cs.s1:cs.s2) >= cs.tar) renderEnd({}); 
+        }
+
+        setTimeout(() => { 
+            document.getElementById('s1').innerText = cs.s1; 
+            document.getElementById('s2').innerText = cs.s2; 
+            localM = null; 
+            document.getElementById('m1').innerText = n; // Keep it visible until next turn starts
+            document.getElementById('m2').innerText = cn;
+            if(cs.tar > 0) { 
+                document.getElementById('tarTag').style.visibility = 'visible'; 
+                document.getElementById('tarTag').innerText = `TARGET: ${cs.tar}`; 
+            } 
+            document.getElementById('roleTag').innerText = cs.role;
+            if(cs.role === 'BATTING' && (n===6||n===10)) document.getElementById('s1').classList.add('score-gold');
+            else document.getElementById('s1').classList.remove('score-gold');
+        }, 100); // Faster update
     }
 
     createGrid('tossGrid', handleToss); createGrid('gameGrid', handleMove);
