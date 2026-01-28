@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hand Cricket Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #000; --card: #111; --sky: #00d2ff; --text: #fff; --mute: #444; --brd: #222; --rage: #ff3e3e; --gold: #ffd700; }
+        * { font-family: 'Inter', sans-serif; box-sizing: border-box; touch-action: manipulation; }
+        body { background: var(--bg); color: var(--text); margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        #app { width: 100%; max-width: 420px; height: 100dvh; display: flex; flex-direction: column; padding: 24px; position: relative; justify-content: center; }
+        .view { display: none; flex-direction: column; width: 100%; }
+        .view.active { display: flex; }
+        h1 { font-size: 2.8rem; font-weight: 800; margin: 0; letter-spacing: -2px; line-height: 0.9; text-align: center; }
+        .sub-tag { color: var(--sky); font-size: 0.75rem; letter-spacing: 4px; font-weight: 700; text-transform: uppercase; margin-bottom: 30px; margin-top: 5px; text-align: center; }
+        .card { background: var(--card); border-radius: 24px; padding: 24px; border: 1px solid var(--brd); margin-bottom: 20px; transition: 0.3s; position: relative; }
+        .reveal-box { display: flex; justify-content: space-between; align-items: center; text-align: center; }
+        .player-slot { flex: 1; }
+        .val { font-size: 3.5rem; font-weight: 800; margin: 5px 0; transition: 0.2s; color: var(--text); }
+        .label { font-size: 0.65rem; font-weight: 600; color: var(--mute); text-transform: uppercase; letter-spacing: 1px; }
+        .score-chip { background: rgba(0,210,255,0.1); color: var(--sky); padding: 4px 12px; border-radius: 20px; font-size: 0.9rem; font-weight: 700; display: inline-block; transition: 0.3s; }
+        .score-gold { background: var(--gold); color: #000; box-shadow: 0 0 15px rgba(255,215,0,0.4); }
+        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 20px; }
+        button { background: var(--text); color: #000; border: none; padding: 18px; border-radius: 14px; font-weight: 700; cursor: pointer; transition: 0.1s; font-size: 1rem; }
+        .grid button { background: var(--card); color: var(--text); border: 1px solid var(--brd); font-size: 1.2rem; }
+        .grid button:active { background: var(--mute); }
+        .grid button:disabled { opacity: 0.1; cursor: default; }
+        .btn-main { width: 100%; margin-top: 12px; padding: 20px; }
+        .btn-sec { background: transparent; color: var(--text); border: 1px solid var(--brd); }
+        .btn-rage { background: var(--rage); color: white; margin-top: 20px; }
+        input { width: 100%; background: var(--card); border: 1px solid var(--brd); padding: 20px; border-radius: 14px; color: #fff; text-align: center; font-size: 1.2rem; margin-bottom: 12px; font-weight: 600; outline: none; }
+        #overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.98); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; text-align: center; padding: 40px; }
+        .final-ball { font-size: 0.7rem; color: var(--mute); letter-spacing: 2px; font-weight: 700; margin-top: 10px; text-transform: uppercase; }
+        #status { text-align:center; font-weight:800; color:var(--sky); font-size: 0.8rem; height: 20px; margin-top: 10px;}
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <div id="v-lobby" class="view active">
+        <h1>HAND<br>CRICKET</h1>
+        <div class="sub-tag">PRO EDITION</div>
+        <button class="btn-main" onclick="startCPU()">PLAY COMPUTER</button>
+        <div style="text-align:center; margin: 25px 0 10px; color: var(--mute); font-size: 0.7rem; font-weight: 700; letter-spacing: 2px;">MULTIPLAYER</div>
+        <input type="text" id="joinInp" placeholder="4-DIGIT CODE" maxlength="4" autocomplete="off">
+        <button class="btn-main btn-sec" onclick="joinRoom()">JOIN MATCH</button>
+        <button class="btn-main btn-sec" onclick="createRoom()">CREATE ROOM</button>
+    </div>
+
+    <div id="v-wait" class="view">
+        <div class="sub-tag">MATCH ROOM</div>
+        <div class="card"><div class="label">SHARE CODE</div><div id="roomDisplay" style="font-size: 3.5rem; font-weight: 800; text-align: center;">----</div></div>
+        <button class="btn-main" id="copyBtn" onclick="copyRoom()">COPY CODE</button>
+    </div>
+
+    <div id="v-toss" class="view">
+        <div class="sub-tag">THE TOSS</div>
+        <h2 id="tossMsg" style="margin-bottom: 20px; text-align: center;">PICK A NUMBER</h2>
+        <div id="hostTossUI" style="display:none; gap:10px; margin-bottom:15px;">
+            <button id="t-ODD" class="btn-main" style="flex:1" onclick="setSide('ODD')">ODD</button>
+            <button id="t-EVEN" class="btn-main btn-sec" style="flex:1" onclick="setSide('EVEN')">EVEN</button>
+        </div>
+        <div class="grid" id="tossGrid"></div>
+    </div>
+
+    <div id="v-choice" class="view">
+        <div class="sub-tag">TOSS WON</div>
+        <h2 style="margin-bottom: 30px; text-align: center;">DECIDE YOUR ROLE</h2>
+        <button class="btn-main" onclick="pickRole('BATTING')">BATTING</button>
+        <button class="btn-main btn-sec" onclick="pickRole('BOWLING')">BOWLING</button>
+    </div>
+
+    <div id="v-game" class="view">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <div id="roleTag" class="score-chip" style="font-size: 0.7rem;">...</div>
+            <div id="superTag" class="score-chip" style="font-size: 0.7rem; display:none; background:var(--rage)">SUPER OVER</div>
+        </div>
+        <div class="card" id="gameCard">
+            <div id="tarTag" style="color:var(--sky); font-size:0.75rem; font-weight:800; margin-bottom:15px; visibility:hidden;">TARGET: 0</div>
+            <div class="reveal-box">
+                <div class="player-slot"><div class="label">YOU</div><div class="val" id="m1">-</div><div class="score-chip" id="s1">0</div></div>
+                <div style="font-weight: 900; color: var(--mute); font-size: 1.2rem;">VS</div>
+                <div class="player-slot"><div class="label">OPPONENT</div><div class="val" id="m2">-</div><div class="score-chip" id="s2">0</div></div>
+            </div>
+        </div>
+        <div id="status">PLAY!</div>
+        <div class="grid" id="gameGrid"></div>
+        <button class="btn-main btn-rage" onclick="ragequit()">RAGEQUIT</button>
+    </div>
+
+    <div id="overlay">
+        <div class="sub-tag">MATCH OVER</div>
+        <h1 id="resTitle">VICTORY</h1>
+        <div id="resScore" style="font-size: 1.5rem; margin: 20px 0; font-weight: 700; color: var(--sky);">0 - 0</div>
+        <div class="final-ball" id="resBall">FINAL BALL: 0 vs 0</div>
+        <button class="btn-main" onclick="location.reload()">BACK TO MENU</button>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, set, onValue, update, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    const db = getDatabase(initializeApp({ databaseURL: "https://hand-cricket-4581f-default-rtdb.asia-southeast1.firebasedatabase.app/" }));
+    let rID = null, isHost = false, isCPU = false, tSide = 'ODD', localM = null, gameActive = true;
+
+    const navigate = (id) => { document.querySelectorAll('.view').forEach(v=>v.classList.remove('active')); document.getElementById(`v-${id}`).classList.add('active'); };
+    const createGrid = (id, fn) => {
+        const g = document.getElementById(id); g.innerHTML = '';
+        for(let i=0; i<=10; i++){
+            let b = document.createElement('button'); b.innerText = i; b.onclick = () => fn(i); b.id = `${id}-${i}`; g.appendChild(b);
+        }
+    };
+
+    window.onload = () => document.getElementById('joinInp').focus();
+    document.getElementById('joinInp').addEventListener('keypress', (e) => { if(e.key === 'Enter') joinRoom(); });
+
+    document.addEventListener('keydown', (e) => {
+        if(!gameActive) return;
+        let n = (e.key >= '0' && e.key <= '9') ? parseInt(e.key) : (e.key === '-' ? 10 : null);
+        if(n === null || document.activeElement.tagName === 'INPUT') return;
+        if(document.getElementById('v-toss').classList.contains('active') && !document.getElementById('tossGrid-0').disabled) handleToss(n);
+        if(document.getElementById('v-game').classList.contains('active') && !document.getElementById('gameGrid-0').disabled) handleMove(n);
+    });
+
+    const toggle = (id, active) => { document.querySelectorAll(`#${id} button`).forEach(b => b.disabled = !active); };
+
+    function listen() {
+        onValue(ref(db, 'rooms/'+rID), (s) => {
+            const d = s.val(); if(!d) return;
+            if(d.state === 'TOSS') {
+                navigate('toss'); document.getElementById('hostTossUI').style.display = isHost?'flex':'none';
+                const myT = isHost ? d.t1 : d.t2; toggle('tossGrid', myT === -1);
+                if(isHost && d.t1 !== -1 && d.t2 !== -1) {
+                    const win = ((d.t1 + d.t2) % 2 === 0 ? 'EVEN' : 'ODD') === d.tSide ? 'p1' : 'p2';
+                    update(ref(db, 'rooms/'+rID), { state:'CHOICE', tWin: win });
+                }
+            }
+            if(d.state === 'CHOICE') {
+                if(d.tWin === (isHost?'p1':'p2')) navigate('choice');
+                else { navigate('toss'); document.getElementById('tossMsg').innerText = "OPPONENT CHOOSING..."; toggle('tossGrid', false); }
+            }
+            if(d.state === 'PLAYING') {
+                navigate('game');
+                const amBat = (d.inn===1) ? (isHost ? d.p1Role==='BATTING' : d.p1Role!=='BATTING') : (isHost ? d.p1Role!=='BATTING' : d.p1Role==='BATTING');
+                const myM = isHost ? d.m1 : d.m2;
+                document.getElementById('m1').innerText = (localM !== null) ? localM : (myM === -1 ? '-' : myM);
+                document.getElementById('m2').innerText = (myM === -1) ? '-' : (isHost ? d.l2 : d.l1);
+                document.getElementById('s1').innerText = isHost ? d.s1 : d.s2;
+                document.getElementById('s2').innerText = isHost ? d.s2 : d.s1;
+                const lastMove = isHost ? d.l1 : d.l2;
+                if(amBat && (lastMove === 6 || lastMove === 10)) document.getElementById('s1').classList.add('score-gold');
+                else document.getElementById('s1').classList.remove('score-gold');
+                document.getElementById('roleTag').innerText = amBat ? "BATTING" : "BOWLING";
+                document.getElementById('superTag').style.display = d.super ? 'block' : 'none';
+                document.getElementById('status').innerText = (myM !== -1) ? "WAITING..." : "YOUR TURN";
+                if(d.tar > 0) { document.getElementById('tarTag').style.visibility = 'visible'; document.getElementById('tarTag').innerText = `TARGET: ${d.tar}`; }
+                toggle('gameGrid', myM === -1);
+                if(isHost && d.m1 !== -1 && d.m2 !== -1) { localM = null; setTimeout(() => engine(d), 600); }
+            }
+            if(d.state === 'END') renderEnd(d);
+        });
+    }
+
+    window.createRoom = () => { rID = Math.floor(1000+Math.random()*9000).toString(); isHost = true; set(ref(db, 'rooms/'+rID), { state:'LOBBY', tSide:'ODD', t1:-1, t2:-1, s1:0, s2:0, m1:-1, m2:-1, l1:'-', l2:'-', inn:1, tar:0, super:false }); document.getElementById('roomDisplay').innerText = rID; navigate('wait'); listen(); };
+    window.joinRoom = () => { const code = document.getElementById('joinInp').value.trim(); if(!/^\d{4}$/.test(code)) return; get(ref(db, 'rooms/'+code)).then(s => { if(s.exists()){ rID = code; isHost = false; update(ref(db, 'rooms/'+code), { state:'TOSS' }); listen(); } }); };
+    window.setSide = (s) => { tSide = s; document.getElementById('t-ODD').className = s==='ODD'?'btn-main':'btn-main btn-sec'; document.getElementById('t-EVEN').className = s==='EVEN'?'btn-main':'btn-main btn-sec'; };
+    window.pickRole = (c) => { if(isCPU) { cs.role = c; navigate('game'); return; } update(ref(db, 'rooms/'+rID), { p1Role: isHost?c:(c==='BATTING'?'BOWLING':'BATTING'), state:'PLAYING' }); };
+    function handleToss(n) { if(isCPU) return cpuToss(n); update(ref(db, 'rooms/'+rID), { [isHost?'t1':'t2']: n, tSide: tSide }); }
+    function handleMove(n) { localM = n; document.getElementById('m1').innerText = n; if(isCPU) return cpuMove(n); update(ref(db, `rooms/${rID}`), { [isHost?'m1':'m2']: n }); }
+
+    function engine(d) {
+        let {m1, m2, s1, s2, inn, tar} = d, st = 'PLAYING';
+        const p1B = (inn === 1) ? (d.p1Role === 'BATTING') : (d.p1Role !== 'BATTING');
+        if(m1 === m2) { if(inn === 1) { inn = 2; tar = (p1B?s1:s2)+1; } else { if(s1 === s2) { update(ref(db, 'rooms/'+rID), { s1:0, s2:0, m1:-1, m2:-1, inn:1, tar:0, super:true }); return; } st = 'END'; } }
+        else { let p = p1B ? (m1===0?m2:m1) : (m2===0?m1:m2); if(p1B) s1 += p; else s2 += p; if(inn===2 && (p1B?s1:s2)>=tar) { if(s1 === s2) { update(ref(db, 'rooms/'+rID), { s1:0, s2:0, m1:-1, m2:-1, inn:1, tar:0, super:true }); return; } st = 'END'; } }
+        update(ref(db, 'rooms/'+rID), { s1, s2, m1:-1, m2:-1, l1:m1, l2:m2, inn, tar, state:st });
+    }
+
+    window.ragequit = () => { if(rID && !isCPU) update(ref(db, 'rooms/'+rID), isHost ? {rq:'p1', state:'END'} : {rq:'p2', state:'END'}); location.reload(); };
+
+    function renderEnd(d) {
+        gameActive = false; document.getElementById('overlay').style.display='flex';
+        let sA = isCPU ? cs.s1 : (isHost ? d.s1 : d.s2), sB = isCPU ? cs.s2 : (isHost ? d.s2 : d.s1);
+        let title = sA > sB ? "VICTORY" : (sA === sB ? "TIED" : "DEFEAT");
+        if(d.rq) title = ((isHost && d.rq==='p1') || (!isHost && d.rq==='p2')) ? "YOU FORFEITED" : "OPPONENT RAGEQUIT 🤣";
+        document.getElementById('resTitle').innerText = title; 
+        document.getElementById('resScore').innerText = `${sA} - ${sB}`;
+        document.getElementById('resBall').innerText = `FINAL BALL: ${isCPU ? cs.l1 : (isHost?d.l1:d.l2)} vs ${isCPU ? cs.l2 : (isHost?d.l2:d.l1)}`;
+    }
+
+    window.copyRoom = () => { const el = document.createElement('textarea'); el.value = rID; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); const btn = document.getElementById('copyBtn'); btn.innerText = "COPIED!"; setTimeout(() => btn.innerText = "COPY CODE", 2000); };
+
+    let cs = { s1:0, s2:0, inn:1, tar:0, role:'BATTING', l1:0, l2:0 };
+    window.startCPU = () => { isCPU = true; navigate('toss'); document.getElementById('hostTossUI').style.display='flex'; };
+    
+    function cpuToss(n) { 
+        let cn = Math.floor(Math.random()*11); 
+        if(((n+cn)%2===0?'EVEN':'ODD') === tSide) navigate('choice'); 
+        else { 
+            let choices = ['BATTING', 'BOWLING'];
+            let c = choices[Math.floor(Math.random()*2)];
+            document.getElementById('tossMsg').innerText = `CPU IS ${c}!`;
+            cs.role = (c === 'BATTING' ? 'BOWLING' : 'BATTING');
+            setTimeout(() => { navigate('game'); document.getElementById('roleTag').innerText = cs.role; }, 1200);
+        } 
+    }
+
+    function cpuMove(n) {
+        let cn = Math.floor(Math.random()*11); cs.l1 = n; cs.l2 = cn; document.getElementById('m2').innerText = cn;
+        document.getElementById('roleTag').innerText = cs.role;
+        if(n === cn) { if(cs.inn === 1) { cs.inn = 2; cs.tar = (cs.role === 'BATTING' ? cs.s1 : cs.s2) + 1; cs.role = (cs.role==='BATTING'?'BOWLING':'BATTING'); } else renderEnd({}); }
+        else { if(cs.role === 'BATTING') { cs.s1 += (n===0?cn:n); if(n===6||n===10) document.getElementById('s1').classList.add('score-gold'); else document.getElementById('s1').classList.remove('score-gold'); } else { cs.s2 += (cn===0?n:cn); document.getElementById('s1').classList.remove('score-gold'); } if(cs.inn === 2 && (cs.role==='BATTING'?cs.s1:cs.s2) >= cs.tar) renderEnd({}); }
+        setTimeout(() => { document.getElementById('s1').innerText = cs.s1; document.getElementById('s2').innerText = cs.s2; localM = null; document.getElementById('m1').innerText = '-'; document.getElementById('m2').innerText = '-'; if(cs.tar > 0) { document.getElementById('tarTag').style.visibility = 'visible'; document.getElementById('tarTag').innerText = `TARGET: ${cs.tar}`; } document.getElementById('roleTag').innerText = cs.role; }, 800);
+    }
+
+    createGrid('tossGrid', handleToss); createGrid('gameGrid', handleMove);
+</script>
+</body>
+</html>
