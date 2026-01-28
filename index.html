@@ -66,7 +66,7 @@
 
     <div id="v-choice" class="view">
         <div class="sub-tag">TOSS WON</div>
-        <h2 style="margin-bottom: 30px; text-align: center;">DECIDE YOUR ROLE</h2>
+        <h2 id="choiceMsg" style="margin-bottom: 30px; text-align: center;">DECIDE YOUR ROLE</h2>
         <button class="btn-main" onclick="pickRole('BATTING')">BATTING</button>
         <button class="btn-main btn-sec" onclick="pickRole('BOWLING')">BOWLING</button>
     </div>
@@ -105,11 +105,20 @@
     const db = getDatabase(initializeApp({ databaseURL: "https://hand-cricket-4581f-default-rtdb.asia-southeast1.firebasedatabase.app/" }));
     let rID = null, isHost = false, isCPU = false, tSide = 'ODD', localM = null, gameActive = true;
 
+    // Feature: Simple Audio Context for Presentation
+    const audio = new (window.AudioContext || window.webkitAudioContext)();
+    function playNote(freq, type, dur) {
+        const osc = audio.createOscillator(); const gain = audio.createGain();
+        osc.type = type; osc.frequency.setValueAtTime(freq, audio.currentTime);
+        gain.gain.setValueAtTime(0.1, audio.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + dur);
+        osc.connect(gain); gain.connect(audio.destination); osc.start(); osc.stop(audio.currentTime + dur);
+    }
+
     const navigate = (id) => { document.querySelectorAll('.view').forEach(v=>v.classList.remove('active')); document.getElementById(`v-${id}`).classList.add('active'); };
     const createGrid = (id, fn) => {
         const g = document.getElementById(id); g.innerHTML = '';
         for(let i=0; i<=10; i++){
-            let b = document.createElement('button'); b.innerText = i; b.onclick = () => fn(i); b.id = `${id}-${i}`; g.appendChild(b);
+            let b = document.createElement('button'); b.innerText = i; b.onclick = () => { playNote(440, 'sine', 0.1); fn(i); }; b.id = `${id}-${i}`; g.appendChild(b);
         }
     };
 
@@ -133,21 +142,22 @@
                 navigate('toss'); document.getElementById('hostTossUI').style.display = isHost?'flex':'none';
                 const myT = isHost ? d.t1 : d.t2; toggle('tossGrid', myT === -1);
                 if(isHost && d.t1 !== -1 && d.t2 !== -1) {
-                    const win = ((d.t1 + d.t2) % 2 === 0 ? 'EVEN' : 'ODD') === d.tSide ? 'p1' : 'p2';
-                    update(ref(db, 'rooms/'+rID), { state:'CHOICE', tWin: win });
+                    // FIXED TOSS LOGIC
+                    const sum = d.t1 + d.t2;
+                    const resultParity = (sum % 2 === 0) ? 'EVEN' : 'ODD';
+                    const win = (resultParity === d.tSide) ? 'p1' : 'p2';
+                    update(ref(db, 'rooms/'+rID), { state:'CHOICE', tWin: win, tSum: sum });
                 }
             }
             if(d.state === 'CHOICE') {
-                if(d.tWin === (isHost?'p1':'p2')) navigate('choice');
-                else { navigate('toss'); document.getElementById('tossMsg').innerText = "OPPONENT CHOOSING..."; toggle('tossGrid', false); }
+                const resultStr = `(Sum: ${d.tSum})`;
+                if(d.tWin === (isHost?'p1':'p2')) { navigate('choice'); document.getElementById('choiceMsg').innerText = `YOU WON TOSS! ${resultStr}`; }
+                else { navigate('toss'); document.getElementById('tossMsg').innerText = `OPPONENT WON TOSS ${resultStr}`; toggle('tossGrid', false); }
             }
             if(d.state === 'PLAYING') {
                 navigate('game');
                 const amBat = (d.inn===1) ? (isHost ? d.p1Role==='BATTING' : d.p1Role!=='BATTING') : (isHost ? d.p1Role!=='BATTING' : d.p1Role==='BATTING');
                 const myM = isHost ? d.m1 : d.m2;
-                
-                // FIXED FLOW: If engine hasn't processed current moves yet, show what we have.
-                // If engine just reset (myM is -1), show the LAST known moves (l1/l2).
                 if(myM === -1) {
                     document.getElementById('m1').innerText = d.l1 === '-' ? '-' : (isHost ? d.l1 : d.l2);
                     document.getElementById('m2').innerText = d.l2 === '-' ? '-' : (isHost ? d.l2 : d.l1);
@@ -155,20 +165,15 @@
                     document.getElementById('m1').innerText = (isHost ? d.m1 : d.m2) === -1 ? (localM !== null ? localM : '-') : (isHost ? d.m1 : d.m2);
                     document.getElementById('m2').innerText = (isHost ? d.m2 : d.m1) === -1 ? '-' : (isHost ? d.m2 : d.m1);
                 }
-
                 document.getElementById('s1').innerText = isHost ? d.s1 : d.s2;
                 document.getElementById('s2').innerText = isHost ? d.s2 : d.s1;
-                
                 const lastMove = isHost ? d.l1 : d.l2;
-                if(amBat && (lastMove === 6 || lastMove === 10)) document.getElementById('s1').classList.add('score-gold');
+                if(amBat && (lastMove === 6 || lastMove === 10)) { document.getElementById('s1').classList.add('score-gold'); playNote(880, 'square', 0.2); }
                 else document.getElementById('s1').classList.remove('score-gold');
-                
                 document.getElementById('roleTag').innerText = amBat ? "BATTING" : "BOWLING";
                 document.getElementById('superTag').style.display = d.super ? 'block' : 'none';
                 document.getElementById('status').innerText = (myM !== -1) ? "WAITING..." : "YOUR TURN";
-                
                 if(d.tar > 0) { document.getElementById('tarTag').style.visibility = 'visible'; document.getElementById('tarTag').innerText = `TARGET: ${d.tar}`; }
-                
                 toggle('gameGrid', myM === -1);
                 if(isHost && d.m1 !== -1 && d.m2 !== -1) { localM = null; setTimeout(() => engine(d), 600); }
             }
@@ -186,8 +191,14 @@
     function engine(d) {
         let {m1, m2, s1, s2, inn, tar} = d, st = 'PLAYING';
         const p1B = (inn === 1) ? (d.p1Role === 'BATTING') : (d.p1Role !== 'BATTING');
-        if(m1 === m2) { if(inn === 1) { inn = 2; tar = (p1B?s1:s2)+1; } else { if(s1 === s2) { update(ref(db, 'rooms/'+rID), { s1:0, s2:0, m1:-1, m2:-1, inn:1, tar:0, super:true }); return; } st = 'END'; } }
-        else { let p = p1B ? (m1===0?m2:m1) : (m2===0?m1:m2); if(p1B) s1 += p; else s2 += p; if(inn===2 && (p1B?s1:s2)>=tar) { if(s1 === s2) { update(ref(db, 'rooms/'+rID), { s1:0, s2:0, m1:-1, m2:-1, inn:1, tar:0, super:true }); return; } st = 'END'; } }
+        if(m1 === m2) { 
+            if(window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]);
+            if(inn === 1) { inn = 2; tar = (p1B?s1:s2)+1; } 
+            else { if(s1 === s2) { update(ref(db, 'rooms/'+rID), { s1:0, s2:0, m1:-1, m2:-1, inn:1, tar:0, super:true }); return; } st = 'END'; } 
+        } else { 
+            let p = p1B ? (m1===0?m2:m1) : (m2===0?m1:m2); if(p1B) s1 += p; else s2 += p; 
+            if(inn===2 && (p1B?s1:s2)>=tar) { if(s1 === s2) { update(ref(db, 'rooms/'+rID), { s1:0, s2:0, m1:-1, m2:-1, inn:1, tar:0, super:true }); return; } st = 'END'; } 
+        }
         update(ref(db, 'rooms/'+rID), { s1, s2, m1:-1, m2:-1, l1:m1, l2:m2, inn, tar, state:st });
     }
 
@@ -210,11 +221,13 @@
     
     function cpuToss(n) { 
         let cn = Math.floor(Math.random()*11); 
-        if(((n+cn)%2===0?'EVEN':'ODD') === tSide) navigate('choice'); 
-        else { 
-            let choices = ['BATTING', 'BOWLING'];
-            let c = choices[Math.floor(Math.random()*2)];
-            document.getElementById('tossMsg').innerText = `CPU CHOSE TO ${c}!`;
+        const sum = n + cn;
+        const resultParity = (sum % 2 === 0) ? 'EVEN' : 'ODD';
+        if(resultParity === tSide) {
+             navigate('choice'); document.getElementById('choiceMsg').innerText = `YOU WON TOSS! (Sum: ${sum})`;
+        } else { 
+            let c = ['BATTING', 'BOWLING'][Math.floor(Math.random()*2)];
+            document.getElementById('tossMsg').innerText = `CPU WON! CHOSE TO ${c} (Sum: ${sum})`;
             cs.role = (c === 'BATTING' ? 'BOWLING' : 'BATTING');
             setTimeout(() => { navigate('game'); document.getElementById('roleTag').innerText = cs.role; }, 1200);
         } 
@@ -222,40 +235,25 @@
 
     function cpuMove(n) {
         let cn = Math.floor(Math.random()*11); 
-        // Sync visual immediately
-        document.getElementById('m1').innerText = n;
-        document.getElementById('m2').innerText = cn;
+        document.getElementById('m1').innerText = n; document.getElementById('m2').innerText = cn;
         cs.l1 = n; cs.l2 = cn; 
-
         if(n === cn) { 
-            if(cs.inn === 1) { 
-                cs.inn = 2; cs.tar = (cs.role === 'BATTING' ? cs.s1 : cs.s2) + 1; cs.role = (cs.role==='BATTING'?'BOWLING':'BATTING'); 
-            } else renderEnd({}); 
+            if(window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]);
+            if(cs.inn === 1) { cs.inn = 2; cs.tar = (cs.role === 'BATTING' ? cs.s1 : cs.s2) + 1; cs.role = (cs.role==='BATTING'?'BOWLING':'BATTING'); } 
+            else renderEnd({}); 
         } else { 
-            if(cs.role === 'BATTING') { 
-                cs.s1 += (n===0?cn:n); 
-            } else { 
-                cs.s2 += (cn===0?n:cn); 
-            } 
+            if(cs.role === 'BATTING') cs.s1 += (n===0?cn:n); else cs.s2 += (cn===0?n:cn); 
             if(cs.inn === 2 && (cs.role==='BATTING'?cs.s1:cs.s2) >= cs.tar) renderEnd({}); 
         }
-
         setTimeout(() => { 
-            document.getElementById('s1').innerText = cs.s1; 
-            document.getElementById('s2').innerText = cs.s2; 
-            localM = null; 
-            document.getElementById('m1').innerText = n; // Keep it visible until next turn starts
-            document.getElementById('m2').innerText = cn;
-            if(cs.tar > 0) { 
-                document.getElementById('tarTag').style.visibility = 'visible'; 
-                document.getElementById('tarTag').innerText = `TARGET: ${cs.tar}`; 
-            } 
+            document.getElementById('s1').innerText = cs.s1; document.getElementById('s2').innerText = cs.s2; 
+            localM = null; document.getElementById('m1').innerText = n; document.getElementById('m2').innerText = cn;
+            if(cs.tar > 0) { document.getElementById('tarTag').style.visibility = 'visible'; document.getElementById('tarTag').innerText = `TARGET: ${cs.tar}`; } 
             document.getElementById('roleTag').innerText = cs.role;
-            if(cs.role === 'BATTING' && (n===6||n===10)) document.getElementById('s1').classList.add('score-gold');
+            if(cs.role === 'BATTING' && (n===6||n===10)) { document.getElementById('s1').classList.add('score-gold'); playNote(880, 'square', 0.2); }
             else document.getElementById('s1').classList.remove('score-gold');
-        }, 100); // Faster update
+        }, 100);
     }
-
     createGrid('tossGrid', handleToss); createGrid('gameGrid', handleMove);
 </script>
 </body>
