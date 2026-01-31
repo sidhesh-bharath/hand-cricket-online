@@ -3,46 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Hand Cricket Pro</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <title>Hand Cricket Pro: Redesign</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #000; --card: #111; --sky: #00d2ff; --text: #fff; --mute: #444; --brd: #222; --rage: #ff3e3e; --gold: #ffd700; }
-        * { font-family: 'Inter', sans-serif; box-sizing: border-box; touch-action: manipulation; }
+        :root { --bg: #050505; --card-bg: #121212; --sky: #38bdf8; --text: #f8fafc; --mute: #64748b; --brd: #262626; --rage: #ef4444; --gold: #eab308; --crazy: #c084fc; --win: #22c55e; }
+        * { font-family: 'Inter', sans-serif; box-sizing: border-box; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+        
         body { background: var(--bg); color: var(--text); margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
         #app { width: 100%; max-width: 420px; height: 100dvh; display: flex; flex-direction: column; padding: 24px; position: relative; justify-content: center; }
-        .view { display: none; flex-direction: column; width: 100%; z-index: 10; }
+        
+        /* VIEWS */
+        .view { display: none; flex-direction: column; width: 100%; z-index: 10; animation: fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
         .view.active { display: flex; }
-        h1 { font-size: 2.8rem; font-weight: 800; margin: 0; letter-spacing: -2px; line-height: 0.9; text-align: center; }
-        .sub-tag { color: var(--sky); font-size: 0.75rem; letter-spacing: 4px; font-weight: 700; text-transform: uppercase; margin-bottom: 30px; margin-top: 5px; text-align: center; }
-        .card { background: var(--card); border-radius: 24px; padding: 24px; border: 1px solid var(--brd); margin-bottom: 20px; position: relative; }
-        .reveal-box { display: flex; justify-content: space-between; align-items: center; text-align: center; }
-        .player-slot { flex: 1; }
-        .val { font-size: 3.5rem; font-weight: 800; margin: 5px 0; color: var(--text); }
-        .label { font-size: 0.65rem; font-weight: 600; color: var(--mute); text-transform: uppercase; letter-spacing: 1px; }
-        .score-chip { background: rgba(0,210,255,0.1); color: var(--sky); padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; display: inline-block; transition: 0.3s; }
-        .score-gold { background: var(--gold) !important; color: #000 !important; box-shadow: 0 0 25px rgba(255,215,0,0.7); font-weight: 900; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* TYPOGRAPHY */
+        h1 { font-size: 3rem; font-weight: 900; margin: 0; letter-spacing: -2px; line-height: 0.85; text-align: center; background: linear-gradient(to bottom, #fff, #999); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .sub-tag { color: var(--sky); font-size: 0.7rem; letter-spacing: 4px; font-weight: 800; text-transform: uppercase; margin-bottom: 30px; margin-top: 8px; text-align: center; opacity: 0.9; }
         
-        /* ALERTS & POPUPS */
-        #outPopup { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); background: var(--rage); color: white; padding: 18px 50px; border-radius: 50px; font-weight: 900; font-size: 2.2rem; z-index: 5000; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; opacity: 0; }
-        #outPopup.show { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+        /* DARK BOARD (Game Card) */
+        .game-board { 
+            background: linear-gradient(145deg, #1a1a1a, #0f0f0f); 
+            border-radius: 28px; 
+            padding: 30px 24px; 
+            border: 1px solid var(--brd); 
+            margin-bottom: 25px; 
+            position: relative; 
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5);
+        }
         
-        #targetBanner { position: absolute; top: -120px; left: 0; width: 100%; background: var(--sky); color: #000; padding: 25px; text-align: center; font-weight: 900; font-size: 1.3rem; transition: 0.8s cubic-bezier(0.4, 0, 0.2, 1); z-index: 4000; letter-spacing: 2px; box-shadow: 0 10px 30px rgba(0, 210, 255, 0.4); pointer-events: none; }
-        #targetBanner.show { top: 0; }
+        /* SCORE DISPLAY */
+        .scoreboard { display: flex; justify-content: space-between; align-items: flex-end; position: relative; z-index: 2; }
+        .p-col { display: flex; flex-direction: column; align-items: center; flex: 1; }
+        .p-label { font-size: 0.6rem; font-weight: 700; color: var(--mute); letter-spacing: 1.5px; margin-bottom: 6px; }
+        .p-score { font-size: 1.8rem; font-weight: 800; color: var(--text); line-height: 1; }
+        .p-diff { font-size: 0.65rem; font-weight: 700; margin-top: 4px; opacity: 0; transition: 0.3s; }
+        .p-diff.pos { color: var(--win); opacity: 1; }
+        .p-diff.neg { color: var(--rage); opacity: 1; }
+
+        .vs-badge { font-size: 0.9rem; font-weight: 900; color: #333; background: #111; padding: 8px; border-radius: 50%; border: 1px solid #222; margin: 0 10px; margin-bottom: 10px; }
+
+        /* MOVES DISPLAY (The Big Numbers) */
+        .moves-area { display: flex; justify-content: space-between; align-items: center; margin-top: 25px; background: rgba(0,0,0,0.3); border-radius: 16px; padding: 15px; border: 1px solid #1a1a1a; }
+        .move-box { flex: 1; display: flex; justify-content: center; align-items: center; height: 70px; }
+        .move-val { font-size: 3.5rem; font-weight: 800; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.5); transition: 0.1s; }
         
-        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 20px; }
-        button { background: var(--text); color: #000; border: none; padding: 18px; border-radius: 14px; font-weight: 700; cursor: pointer; transition: 0.1s; font-size: 1rem; z-index: 20; }
-        .grid button { background: var(--card); color: var(--text); border: 1px solid var(--brd); font-size: 1.2rem; }
-        .grid button:active { background: var(--mute); transform: scale(0.95); }
-        .grid button:disabled { opacity: 0.1; cursor: not-allowed; pointer-events: none; }
-        
-        .btn-main { width: 100%; margin-top: 12px; padding: 20px; }
+        /* STATES */
+        .move-val.ready { font-size: 1rem; color: var(--sky); animation: pulse 1.5s infinite; letter-spacing: 1px; }
+        .move-val.hidden { color: #333; font-size: 2.5rem; }
+        @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+
+        /* CHIPS */
+        .status-chip { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #222; border: 1px solid #333; color: var(--sky); padding: 4px 12px; border-radius: 20px; font-size: 0.65rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; white-space: nowrap; }
+        .mode-chip { position: absolute; top: 16px; right: 16px; font-size: 0.55rem; font-weight: 800; color: var(--mute); border: 1px solid #222; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
+
+        /* INPUTS & BUTTONS */
+        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 15px; }
+        button { background: var(--text); color: #000; border: none; padding: 18px; border-radius: 16px; font-weight: 800; cursor: pointer; transition: 0.1s; font-size: 1rem; position: relative; }
+        .grid button { background: #161616; color: var(--mute); border: 1px solid #222; font-size: 1.2rem; }
+        .grid button:active { background: #222; transform: scale(0.96); color: #fff; }
+        .grid button.selected { background: var(--sky); color: #000; border-color: var(--sky); box-shadow: 0 0 20px rgba(56, 189, 248, 0.3); }
+        .grid button:disabled { opacity: 0.3; cursor: default; }
+
+        .btn-main { width: 100%; margin-top: 12px; padding: 22px; font-size: 0.9rem; letter-spacing: 1px; }
         .btn-sec { background: transparent; color: var(--text); border: 1px solid var(--brd); }
-        .btn-rage { background: var(--rage); color: white; margin-top: 20px; }
+        .btn-crazy { background: transparent; border: 1px solid var(--crazy); color: var(--crazy); }
+        .btn-crazy:active { background: var(--crazy); color: #fff; }
+        .btn-rage { background: #222; color: var(--rage); border: 1px solid #333; font-size: 0.75rem; padding: 15px; margin-top: 25px; }
+
+        input { width: 100%; background: #111; border: 1px solid var(--brd); padding: 22px; border-radius: 16px; color: #fff; text-align: center; font-size: 1.4rem; margin-bottom: 12px; font-weight: 700; letter-spacing: 4px; outline: none; transition: 0.2s; }
+        input:focus { border-color: var(--sky); }
+
+        /* OVERLAYS */
+        #outPopup { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); background: var(--rage); color: white; padding: 20px 60px; border-radius: 100px; font-weight: 900; font-size: 3rem; z-index: 5000; transition: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); pointer-events: none; opacity: 0; box-shadow: 0 10px 40px rgba(239, 68, 68, 0.5); text-shadow: 0 2px 0 #991b1b; }
+        #outPopup.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+
+        #targetBanner { position: absolute; top: -100px; left: 0; width: 100%; background: var(--sky); color: #000; padding: 20px; text-align: center; font-weight: 900; font-size: 1rem; transition: 0.5s; z-index: 4000; letter-spacing: 2px; box-shadow: 0 10px 40px rgba(56, 189, 248, 0.4); }
+        #targetBanner.show { top: 0; }
+
+        /* REDESIGNED END SCREEN */
+        #overlay { position: absolute; inset: 0; background: rgba(5,5,5,0.95); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 9000; padding: 30px; backdrop-filter: blur(10px); }
+        .report-card { width: 100%; background: #111; border: 1px solid #222; border-radius: 24px; padding: 30px 20px; text-align: center; position: relative; box-shadow: 0 30px 60px rgba(0,0,0,0.8); overflow: hidden; }
+        .report-card::before { content:''; position: absolute; top:0; left:0; width:100%; height:4px; background: linear-gradient(90deg, var(--sky), var(--crazy)); }
         
-        input { width: 100%; background: var(--card); border: 1px solid var(--brd); padding: 20px; border-radius: 14px; color: #fff; text-align: center; font-size: 1.2rem; margin-bottom: 12px; font-weight: 600; outline: none; }
+        .res-big { font-size: 3.5rem; font-weight: 900; margin: 10px 0 5px; letter-spacing: -2px; line-height: 1; background: linear-gradient(to right, #fff, #aaa); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .res-sub { color: var(--mute); font-size: 0.75rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 25px; }
         
-        #overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.98); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 9000; text-align: center; padding: 40px; }
-        #matchStatus { text-align:center; font-weight:800; color:var(--sky); font-size: 0.7rem; letter-spacing: 1px; margin-top: 15px; height: 20px; text-transform: uppercase;}
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 15px; padding: 15px; background: #0a0a0a; border-radius: 12px; border: 1px solid #1a1a1a; }
+        .stat-col { display: flex; flex-direction: column; align-items: center; flex: 1; }
+        .stat-val { font-size: 1.5rem; font-weight: 800; color: #fff; }
+        .stat-lbl { font-size: 0.6rem; color: var(--mute); font-weight: 700; margin-top: 4px; }
+        .stat-div { width: 1px; background: #222; margin: 0 15px; }
+
+        .btn-grp { display: flex; gap: 10px; margin-top: 20px; width: 100%; }
+
+        /* Animations */
+        .score-pop { animation: pop 0.2s; color: var(--gold); }
+        .score-crazy { animation: shake 0.3s; color: var(--crazy); }
+        @keyframes pop { 50% { transform: scale(1.3); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+
     </style>
 </head>
 <body>
@@ -54,23 +114,38 @@
     <div id="v-lobby" class="view active">
         <h1>HAND<br>CRICKET</h1>
         <div class="sub-tag">PRO EDITION</div>
-        <button class="btn-main" onclick="startCPU()">PLAY COMPUTER</button>
-        <div style="text-align:center; margin: 25px 0 10px; color: var(--mute); font-size: 0.7rem; font-weight: 700; letter-spacing: 2px;">MULTIPLAYER</div>
-        <input type="text" id="joinInp" placeholder="4-DIGIT CODE" maxlength="4">
-        <button class="btn-main btn-sec" onclick="joinRoom()">JOIN MATCH</button>
-        <button class="btn-main btn-sec" onclick="createRoom()">CREATE ROOM</button>
+        
+        <div style="display:flex; gap:10px; width:100%;">
+            <button class="btn-main" style="flex:1" onclick="startCPU('STANDARD')">VS CPU</button>
+            <button class="btn-main btn-crazy" style="flex:1" onclick="startCPU('CRAZY')">CRAZY CPU</button>
+        </div>
+        
+        <div style="text-align:center; margin: 25px 0 10px; color: var(--mute); font-size: 0.65rem; font-weight: 700; letter-spacing: 2px;">MULTIPLAYER</div>
+        <input type="text" id="joinInp" placeholder="CODE" maxlength="4" autocomplete="off">
+        
+        <div style="display:flex; gap:10px; width:100%; margin-top: 5px;">
+            <button class="btn-main btn-sec" style="flex:1" onclick="createRoom('STANDARD')">CLASSIC</button>
+            <button class="btn-main btn-crazy" style="flex:1" onclick="createRoom('CRAZY')">CRAZY</button>
+        </div>
+        <button class="btn-main btn-sec" style="margin-top:10px" onclick="joinRoom()">JOIN MATCH</button>
     </div>
 
     <div id="v-wait" class="view">
-        <div class="sub-tag">MATCH ROOM</div>
-        <div class="card"><div class="label">SHARE CODE</div><div id="roomDisplay" style="font-size: 3.5rem; font-weight: 800; text-align: center;">----</div></div>
-        <p style="text-align:center; color: var(--mute); font-size: 0.8rem;">Waiting for opponent to join...</p>
+        <div class="sub-tag">LOBBY</div>
+        <div class="game-board" style="text-align:center;">
+            <div class="mode-chip" id="waitModeBadge">STD</div>
+            <div class="p-label">ENTRY CODE</div>
+            <div id="roomDisplay" style="font-size: 4rem; font-weight: 900; color: #fff; letter-spacing: 4px;">----</div>
+        </div>
+        <p style="text-align:center; color: var(--mute); font-size: 0.8rem; margin-top:0;">Waiting for opponent...</p>
         <button class="btn-main" id="copyBtn" onclick="copyRoom()">COPY CODE</button>
     </div>
 
     <div id="v-toss" class="view">
         <div class="sub-tag">THE TOSS</div>
-        <h2 id="tossMsg" style="margin-bottom: 20px; text-align: center;">PICK A NUMBER</h2>
+        <div class="game-board" style="padding: 20px;">
+            <h2 id="tossMsg" style="margin: 0; text-align: center; font-size: 1.2rem;">PICK A NUMBER</h2>
+        </div>
         <div id="hostTossUI" style="display:none; gap:10px; margin-bottom:15px;">
             <button id="t-ODD" class="btn-main" style="flex:1" onclick="setSide('ODD')">ODD</button>
             <button id="t-EVEN" class="btn-main btn-sec" style="flex:1" onclick="setSide('EVEN')">EVEN</button>
@@ -79,41 +154,70 @@
     </div>
 
     <div id="v-choice" class="view">
-        <div class="sub-tag">TOSS WON</div>
-        <h2 id="choiceMsg" style="margin-bottom: 30px; text-align: center;">DECIDE YOUR ROLE</h2>
+        <div class="sub-tag">YOU WON</div>
+        <div class="game-board" style="text-align:center;">
+            <h2 id="choiceMsg" style="margin: 0; font-size: 1.5rem;">CHOOSE ROLE</h2>
+        </div>
         <button class="btn-main" onclick="pickRole('BATTING')">BATTING</button>
         <button class="btn-main btn-sec" onclick="pickRole('BOWLING')">BOWLING</button>
     </div>
 
     <div id="v-game" class="view">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <div id="roleTag" class="score-chip" style="background: var(--text); color: #000;">...</div>
-            <div id="innTag" class="score-chip" style="opacity: 0.6;">INN 1</div>
-        </div>
-        <div class="card">
-            <div id="tarTag" style="color:var(--sky); font-size:0.75rem; font-weight:800; margin-bottom:15px; visibility:hidden;">TARGET: 0</div>
-            <div class="reveal-box">
-                <div class="player-slot"><div class="label">YOU</div><div class="val" id="m1">-</div><div class="score-chip" id="s1">0</div></div>
-                <div style="font-weight: 900; color: var(--mute); font-size: 1.2rem;">VS</div>
-                <div class="player-slot"><div class="label">OPPONENT</div><div class="val" id="m2">-</div><div class="score-chip" id="s2">0</div></div>
+        <div class="game-board">
+            <div class="status-chip" id="innTag">INN 1</div>
+            <div class="mode-chip" id="gameModeBadge">STD</div>
+            
+            <div class="scoreboard">
+                <div class="p-col">
+                    <div class="p-label">YOU</div>
+                    <div class="p-score" id="s1">0</div>
+                    <div class="p-diff" id="d1">+0</div>
+                </div>
+                <div class="vs-badge">VS</div>
+                <div class="p-col">
+                    <div class="p-label">OPP</div>
+                    <div class="p-score" id="s2">0</div>
+                    <div class="p-diff" id="d2">+0</div>
+                </div>
+            </div>
+
+            <div class="moves-area">
+                <div class="move-box"><div class="move-val" id="m1">-</div></div>
+                <div style="width:1px; height:40px; background:#333;"></div>
+                <div class="move-box"><div class="move-val" id="m2">-</div></div>
             </div>
         </div>
-        <div id="matchStatus">GET READY!</div>
+
+        <div id="matchStatus" style="text-align:center; color: var(--sky); font-weight:800; font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">MAKE YOUR MOVE</div>
         <div class="grid" id="gameGrid"></div>
-        <button class="btn-main btn-rage" onclick="ragequit()">RAGEQUIT</button>
+        <button class="btn-main btn-rage" onclick="ragequit()">END MATCH</button>
     </div>
 
     <div id="overlay">
-        <div class="sub-tag">MATCH OVER</div>
-        <h1 id="resTitle" style="color:var(--sky)">VICTORY</h1>
-        <div class="res-split">
-            <div class="res-side"><div class="label">YOU</div><div class="res-num" id="finalS1">0</div></div>
-            <div class="res-mid">VS</div>
-            <div class="res-side"><div class="label">OPP</div><div class="res-num" id="finalS2">0</div></div>
+        <div class="report-card">
+            <div class="sub-tag" style="margin:0;">MATCH REPORT</div>
+            <div class="res-big" id="resTitle">VICTORY</div>
+            <div class="res-sub" id="resSub">YOU WON BY 12 RUNS</div>
+            
+            <div class="stat-row">
+                <div class="stat-col">
+                    <div class="stat-val" id="finalS1">0</div>
+                    <div class="stat-lbl">YOUR SCORE</div>
+                </div>
+                <div class="stat-div"></div>
+                <div class="stat-col">
+                    <div class="stat-val" id="finalS2">0</div>
+                    <div class="stat-lbl">OPPONENT</div>
+                </div>
+            </div>
+
+            <div style="font-size:0.7rem; color:var(--mute); margin-bottom:15px;" id="finalBall">FINAL BALL: 6 vs 4</div>
+
+            <div class="btn-grp">
+                <button class="btn-main btn-sec" style="margin:0; padding:15px;" onclick="location.reload()">HOME</button>
+                <button class="btn-main" style="margin:0; padding:15px;" onclick="rematch()">REMATCH</button>
+            </div>
         </div>
-        <div id="historyLog" style="font-size: 0.8rem; color: var(--mute); margin-bottom: 10px;"></div>
-        <div class="final-ball" id="resBall" style="font-weight: 800;"></div>
-        <button class="btn-main" onclick="location.reload()">PLAY AGAIN</button>
     </div>
 </div>
 
@@ -122,35 +226,31 @@
     import { getDatabase, ref, set, onValue, update, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     const db = getDatabase(initializeApp({ databaseURL: "https://hand-cricket-4581f-default-rtdb.asia-southeast1.firebasedatabase.app/" }));
+    
+    // STATE
     let rID = null, isHost = false, isCPU = false, tSide = 'ODD', localM = null, gameActive = true;
+    let processingTurn = false;
+    let gameMode = 'STANDARD';
+    
+    // CPU State
+    let cs = { s1:0, s2:0, inn:1, tar:0, role:'BATTING', l1:0, l2:0, i1:0, mode:'STANDARD' };
 
+    // Audio
     const audio = new (window.AudioContext || window.webkitAudioContext)();
-    function playSfx(freq, type, dur, vol=0.1) {
+    function playSfx(freq, type, dur) {
         const osc = audio.createOscillator(); const gain = audio.createGain();
         osc.type = type; osc.frequency.setValueAtTime(freq, audio.currentTime);
-        gain.gain.setValueAtTime(vol, audio.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + dur);
+        gain.gain.setValueAtTime(0.1, audio.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + dur);
         osc.connect(gain); gain.connect(audio.destination); osc.start(); osc.stop(audio.currentTime + dur);
     }
 
-    function playCheer() {
-        const bufferSize = audio.sampleRate * 2.0;
-        const buffer = audio.createBuffer(1, bufferSize, audio.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-        const noise = audio.createBufferSource(); noise.buffer = buffer;
-        const filter = audio.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 1200;
-        const gain = audio.createGain(); gain.gain.setValueAtTime(0.06, audio.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + 2.0);
-        noise.connect(filter); filter.connect(gain); gain.connect(audio.destination); noise.start();
-    }
-
-    // Key Listeners
     document.addEventListener('keydown', (e) => {
         if(!gameActive) return;
         let n = (e.key >= '0' && e.key <= '9') ? parseInt(e.key) : (e.key === '-' ? 10 : null);
-        if(n === null || document.activeElement.tagName === 'INPUT') return;
-        if(document.getElementById('v-toss').classList.contains('active')) handleToss(n);
-        if(document.getElementById('v-game').classList.contains('active')) handleMove(n);
+        if(n !== null && document.activeElement.tagName !== 'INPUT') {
+             if(document.getElementById('v-toss').classList.contains('active')) handleToss(n);
+             if(document.getElementById('v-game').classList.contains('active')) handleMove(n);
+        }
     });
 
     const navigate = (id) => { 
@@ -158,104 +258,254 @@
         document.getElementById(`v-${id}`).classList.add('active'); 
     };
 
-    const toggle = (id, active) => { document.querySelectorAll(`#${id} button`).forEach(b => b.disabled = !active); };
-
+    // --- MAIN LOOP ---
     function listen() {
         onValue(ref(db, 'rooms/'+rID), (s) => {
             const d = s.val(); if(!d) return;
-            
+            gameMode = d.mode || 'STANDARD';
+            updateBadges(gameMode);
+
             if(d.state === 'TOSS') {
                 navigate('toss'); 
                 document.getElementById('hostTossUI').style.display = isHost?'flex':'none';
-                toggle('tossGrid', (isHost ? d.t1 : d.t2) === -1);
+                updateTossGrid(d);
                 if(isHost && d.t1 !== -1 && d.t2 !== -1) {
-                    const sum = d.t1 + d.t2;
-                    const win = (((sum % 2 === 0 ? 'EVEN' : 'ODD') === d.tSide) ? 'p1' : 'p2');
-                    update(ref(db, 'rooms/'+rID), { state:'CHOICE', tWin: win, tSum: sum });
+                    setTimeout(() => { 
+                        const sum = d.t1 + d.t2;
+                        const win = (((sum % 2 === 0 ? 'EVEN' : 'ODD') === d.tSide) ? 'p1' : 'p2');
+                        update(ref(db, 'rooms/'+rID), { state:'CHOICE', tWin: win, tSum: sum });
+                    }, 500);
                 }
             }
 
             if(d.state === 'CHOICE') {
                 const iWon = (d.tWin === (isHost?'p1':'p2'));
-                if(iWon) { navigate('choice'); document.getElementById('choiceMsg').innerText = `YOU WON TOSS! (Sum: ${d.tSum})`; }
-                else { navigate('toss'); document.getElementById('tossMsg').innerText = `OPPONENT DECIDING... (Sum: ${d.tSum})`; toggle('tossGrid', false); }
+                if(iWon) { navigate('choice'); document.getElementById('choiceMsg').innerText = `YOU WON (${d.tSum})`; }
+                else { navigate('toss'); document.getElementById('tossMsg').innerText = `OPPONENT CHOOSING (${d.tSum})`; disableAllGrid('tossGrid'); }
             }
 
             if(d.state === 'PLAYING') {
                 navigate('game');
+                
+                // Triggers
                 if(d.triggerOut) { triggerOut(); update(ref(db, 'rooms/'+rID), {triggerOut: false}); }
                 const amBat = (d.inn===1) ? (isHost ? d.p1Role==='BATTING' : d.p1Role!=='BATTING') : (isHost ? d.p1Role!=='BATTING' : d.p1Role==='BATTING');
                 if(d.triggerTar) { triggerTarget(d.tar, amBat); update(ref(db, 'rooms/'+rID), {triggerTar: false}); }
-                
-                document.getElementById('s1').innerText = isHost ? d.s1 : d.s2;
-                document.getElementById('s2').innerText = isHost ? d.s2 : d.s1;
-                document.getElementById('innTag').innerText = `INN ${d.inn}`;
-                document.getElementById('roleTag').innerText = amBat ? "BATTING" : "BOWLING";
 
-                const lastMove = isHost ? d.l1 : d.l2;
-                if(amBat && (lastMove === 6 || lastMove === 10)) {
-                    document.getElementById('s1').classList.add('score-gold');
-                    playSfx(900, 'square', 0.3, 0.15); playCheer();
-                } else document.getElementById('s1').classList.remove('score-gold');
+                // UI Rendering
+                renderGameUI(d.s1, d.s2, d.inn, amBat, isHost?d.l1:d.l2, isHost?d.l2:d.l1, d.tar);
 
-                document.getElementById('m1').innerText = (isHost?d.m1:d.m2) === -1 ? (localM||'-') : (isHost?d.m1:d.m2);
-                document.getElementById('m2').innerText = (isHost?d.m2:d.m1) === -1 ? '-' : (isHost?d.m2:d.m1);
-                
-                toggle('gameGrid', (isHost ? d.m1 : d.m2) === -1);
-                if(isHost && d.m1 !== -1 && d.m2 !== -1) { localM = null; setTimeout(() => engine(d), 600); }
+                const myMoveDB = isHost ? d.m1 : d.m2;
+                const oppMoveDB = isHost ? d.m2 : d.m1;
+                const bothPlayed = (d.m1 !== -1 && d.m2 !== -1);
+
+                renderMoves(localM, myMoveDB, oppMoveDB, bothPlayed);
+
+                if(isHost && bothPlayed && !processingTurn) {
+                    processingTurn = true;
+                    localM = null;
+                    setTimeout(() => { engine(d); processingTurn = false; }, 1500);
+                }
+                if(!isHost && myMoveDB === -1 && oppMoveDB === -1) localM = null;
             }
-            if(d.state === 'END') renderEnd(d);
+            if(d.state === 'END') renderEnd(isHost ? d.s1 : d.s2, isHost ? d.s2 : d.s1, d.rq);
         });
     }
 
+    // --- RENDER HELPERS ---
+    function renderGameUI(s1, s2, inn, amBat, l1, l2, tar) {
+        // Scores
+        document.getElementById('s1').innerText = isHost ? s1 : s2;
+        document.getElementById('s2').innerText = isHost ? s2 : s1;
+        document.getElementById('innTag').innerText = (inn === 2) ? `CHASE: ${tar}` : `INN 1`;
+        
+        // Chip Animations
+        const myScoreEl = document.getElementById('s1');
+        myScoreEl.className = 'p-score'; 
+        if(amBat) {
+            if(gameMode === 'CRAZY' && l1 === l2 && l1 !== '-') myScoreEl.classList.add('score-crazy');
+            else if(l1 === 6 || l1 === 10) myScoreEl.classList.add('score-pop');
+        }
+
+        // Run Diff Logic
+        const diff = (isHost ? s1 : s2) - (isHost ? s2 : s1);
+        const d1 = document.getElementById('d1');
+        if(diff > 0) { d1.innerText = `+${diff}`; d1.className = 'p-diff pos'; }
+        else if(diff < 0) { d1.innerText = `${diff}`; d1.className = 'p-diff neg'; }
+        else { d1.style.opacity = 0; }
+
+        // Status Text
+        const statusEl = document.getElementById('matchStatus');
+        if(inn===2) {
+            const need = tar - (isHost?s1:s2);
+            statusEl.innerText = amBat ? `NEED ${need} TO WIN` : `DEFEND ${need-1}`;
+        } else {
+            statusEl.innerText = amBat ? "SET A TARGET" : "TAKE WICKETS";
+        }
+    }
+
+    function renderMoves(loc, dbMine, dbOpp, both) {
+        const m1 = document.getElementById('m1');
+        const m2 = document.getElementById('m2');
+        
+        // Me
+        if(loc !== null) { m1.innerText = loc; m1.className = "move-val"; }
+        else if(dbMine !== -1) { m1.innerText = dbMine; m1.className = "move-val"; }
+        else { m1.innerText = "-"; m1.className = "move-val"; }
+
+        // Opp
+        if(both) { m2.innerText = dbOpp; m2.className = "move-val"; }
+        else if(dbOpp !== -1) { m2.innerText = "?"; m2.className = "move-val ready"; }
+        else { m2.innerText = "-"; m2.className = "move-val"; }
+
+        // Grid
+        const locked = (loc !== null || dbMine !== -1);
+        document.querySelectorAll('#gameGrid button').forEach(b => {
+            b.disabled = locked;
+            if(b.innerText == loc) b.classList.add('selected'); else b.classList.remove('selected');
+        });
+    }
+
+    // --- GAME ENGINE ---
     function engine(d) {
-        let {m1, m2, s1, s2, inn, tar, i1} = d, st = 'PLAYING', tout = false, ttar = false;
+        let {m1, m2, s1, s2, inn, tar, i1, mode} = d, st = 'PLAYING', tout = false, ttar = false;
         const p1B = (inn === 1) ? (d.p1Role === 'BATTING') : (d.p1Role !== 'BATTING');
-        if(m1 === m2) { 
+        
+        let isOut = false, runScored = 0;
+        const bVal = p1B ? m1 : m2;
+        const wVal = p1B ? m2 : m1;
+
+        if(mode === 'CRAZY') {
+            if (Math.abs(bVal - wVal) === 1) isOut = true;
+            else if (bVal === wVal) runScored = bVal * bVal;
+            else runScored = (bVal === 0) ? wVal : bVal;
+        } else {
+            if (m1 === m2) isOut = true;
+            else runScored = (bVal === 0) ? wVal : bVal;
+        }
+
+        if(isOut) { 
             tout = true;
             if(inn === 1) { inn = 2; i1 = (p1B?s1:s2); tar = i1+1; ttar = true; } else st = 'END';
         } else { 
-            let p = p1B ? (m1===0?m2:m1) : (m2===0?m1:m2); if(p1B) s1 += p; else s2 += p; 
+            if(p1B) s1 += runScored; else s2 += runScored; 
             if(inn===2 && (p1B?s1:s2)>=tar) st = 'END';
         }
+        
         update(ref(db, 'rooms/'+rID), { s1, s2, m1:-1, m2:-1, l1:m1, l2:m2, inn, tar, i1, state:st, triggerOut: tout, triggerTar: ttar });
     }
 
-    const triggerOut = () => { const el = document.getElementById('outPopup'); el.classList.add('show'); playSfx(100, 'sawtooth', 0.8, 0.2); setTimeout(() => el.classList.remove('show'), 2000); };
-    const triggerTarget = (v, b) => { const el = document.getElementById('targetBanner'); document.getElementById('targetVal').innerText = v; document.getElementById('targetContext').innerText = b ? "CHASE BEGINS" : "DEFEND THIS"; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 4000); };
+    // --- CPU LOGIC ---
+    window.startCPU = (m) => { isCPU = true; cs = { s1:0, s2:0, inn:1, tar:0, role:'BATTING', l1:'-', l2:'-', i1:0, mode:m }; updateBadges(m); navigate('toss'); };
+    function cpuToss(n) { navigate('choice'); document.getElementById('choiceMsg').innerText = "YOU WON TOSS"; }
+    
+    // *** FIX: CPU PICK ROLE ***
+    window.pickRole = (c) => { 
+        if(isCPU) {
+            cs.role = c; // Set human role
+            navigate('game');
+            // Initial render for CPU game start
+            renderGameUI(cs.s1, cs.s2, cs.inn, c==='BATTING', '-', '-', 0);
+            renderMoves(null, -1, -1, false);
+            return;
+        }
+        update(ref(db, 'rooms/'+rID), { p1Role: isHost?c:(c==='BATTING'?'BOWLING':'BATTING'), state:'PLAYING' }); 
+    };
 
-    function renderEnd(d) {
-        gameActive = false; document.getElementById('overlay').style.display='flex';
-        let s1 = isHost ? d.s1 : d.s2, s2 = isHost ? d.s2 : d.s1;
-        document.getElementById('finalS1').innerText = s1; document.getElementById('finalS2').innerText = s2;
-        let title = s1 > s2 ? "VICTORY" : (s1 === s2 ? "DRAW" : "DEFEAT");
-        if(d.rq) title = (d.rq === (isHost?'p1':'p2')) ? "YOU RAGEQUIT 🤣" : "OPPONENT LEFT";
-        document.getElementById('resTitle').innerText = title;
+    function cpuMove(n) {
+        const cn = Math.floor(Math.random()*11);
+        
+        // Render Immediately
+        renderMoves(n, n, cn, true); 
+        
+        let isOut = false, runs = 0;
+        const humanBat = cs.role === 'BATTING';
+        const b = humanBat ? n : cn;
+        const w = humanBat ? cn : n;
+
+        if(cs.mode === 'CRAZY') {
+            if(Math.abs(b-w)===1) isOut = true;
+            else if(b===w) runs = b*b;
+            else runs = (b===0?w:b);
+        } else {
+            if(n===cn) isOut = true;
+            else runs = (b===0?w:b);
+        }
+
+        // Delay for realism
+        setTimeout(() => {
+            if(isOut) {
+                triggerOut();
+                if(cs.inn === 1) { 
+                    cs.inn = 2; cs.i1 = (humanBat?cs.s1:cs.s2); cs.tar = cs.i1+1; 
+                    cs.role = (humanBat?'BOWLING':'BATTING');
+                    setTimeout(()=>triggerTarget(cs.tar, !humanBat), 1500);
+                } else renderEnd(cs.s1, cs.s2);
+            } else {
+                if(humanBat) cs.s1 += runs; else cs.s2 += runs;
+                if(cs.inn===2 && (humanBat?cs.s1:cs.s2)>=cs.tar) renderEnd(cs.s1, cs.s2);
+            }
+            
+            cs.l1 = n; cs.l2 = cn;
+            renderGameUI(cs.s1, cs.s2, cs.inn, cs.role==='BATTING', n, cn, cs.tar);
+            renderMoves(null, -1, -1, false); // Reset grid
+        }, 1000);
     }
 
-    window.createRoom = () => { 
-        rID = Math.floor(1000+Math.random()*9000).toString(); isHost = true; 
-        set(ref(db, 'rooms/'+rID), { state:'LOBBY', tSide:'ODD', t1:-1, t2:-1, s1:0, s2:0, m1:-1, m2:-1, l1:'-', l2:'-', inn:1, tar:0, i1:0 }); 
-        document.getElementById('roomDisplay').innerText = rID; navigate('wait'); listen(); 
-    };
-    window.joinRoom = () => { 
-        const code = document.getElementById('joinInp').value.trim(); 
-        if(/^\d{4}$/.test(code)) get(ref(db, 'rooms/'+code)).then(s => { if(s.exists()){ rID = code; isHost = false; update(ref(db, 'rooms/'+code), { state:'TOSS' }); listen(); } }); 
-    };
+    // --- UTILS ---
+    function updateBadges(m) {
+        const txt = (m==='CRAZY') ? "CRAZY" : "STD";
+        const col = (m==='CRAZY') ? "var(--crazy)" : "var(--mute)";
+        document.getElementById('waitModeBadge').innerText = txt; document.getElementById('waitModeBadge').style.color = col; document.getElementById('waitModeBadge').style.borderColor = col;
+        document.getElementById('gameModeBadge').innerText = txt; document.getElementById('gameModeBadge').style.color = col; document.getElementById('gameModeBadge').style.borderColor = col;
+    }
 
+    function updateTossGrid(d) {
+        const myT = isHost ? d.t1 : d.t2;
+        document.querySelectorAll('#tossGrid button').forEach(b => {
+            let n = parseInt(b.innerText);
+            b.disabled = (myT !== -1);
+            if(n === myT) b.classList.add('selected'); else b.classList.remove('selected');
+        });
+    }
+    function disableAllGrid(id) { document.querySelectorAll(`#${id} button`).forEach(b => b.disabled = true); }
+
+    const triggerOut = () => { const el = document.getElementById('outPopup'); el.classList.add('show'); playSfx(150, 'sawtooth', 0.5); setTimeout(() => el.classList.remove('show'), 2000); };
+    const triggerTarget = (v, b) => { const el = document.getElementById('targetBanner'); document.getElementById('targetVal').innerText = v; document.getElementById('targetContext').innerText = b ? "CHASE BEGINS" : "DEFEND THIS"; el.classList.add('show'); playSfx(600, 'sine', 0.5); setTimeout(() => el.classList.remove('show'), 4000); };
+
+    function renderEnd(s1, s2, rq) {
+        gameActive = false; document.getElementById('overlay').style.display='flex';
+        document.getElementById('finalS1').innerText = s1; document.getElementById('finalS2').innerText = s2;
+        
+        let title = "DEFEAT", sub = "BETTER LUCK NEXT TIME";
+        if(s1 > s2) { title = "VICTORY"; sub = `WON BY ${s1-s2} RUNS`; playSfx(600,'square',0.5); }
+        else if(s1 === s2) { title = "DRAW"; sub = "WHAT A MATCH!"; }
+        
+        if(rq) { title = "OPPONENT LEFT"; sub = "DEFAULT VICTORY"; }
+        
+        document.getElementById('resTitle').innerText = title;
+        document.getElementById('resSub').innerText = sub;
+    }
+
+    window.rematch = () => { location.reload(); }
+    window.createRoom = (m='STANDARD') => { rID = Math.floor(1000+Math.random()*9000).toString(); isHost = true; set(ref(db, 'rooms/'+rID), { state:'LOBBY', mode: m, tSide:'ODD', t1:-1, t2:-1, s1:0, s2:0, m1:-1, m2:-1, l1:'-', l2:'-', inn:1, tar:0, i1:0 }); document.getElementById('roomDisplay').innerText = rID; navigate('wait'); listen(); };
+    window.joinRoom = () => { const code = document.getElementById('joinInp').value.trim(); if(/^\d{4}$/.test(code)) get(ref(db, 'rooms/'+code)).then(s => { if(s.exists()){ rID = code; isHost = false; update(ref(db, 'rooms/'+code), { state:'TOSS' }); listen(); } }); };
     window.setSide = (s) => { tSide = s; document.getElementById('t-ODD').className = s==='ODD'?'btn-main':'btn-main btn-sec'; document.getElementById('t-EVEN').className = s==='EVEN'?'btn-main':'btn-main btn-sec'; };
-    window.pickRole = (c) => { update(ref(db, 'rooms/'+rID), { p1Role: isHost?c:(c==='BATTING'?'BOWLING':'BATTING'), state:'PLAYING' }); };
-    window.handleToss = (n) => { update(ref(db, 'rooms/'+rID), { [isHost?'t1':'t2']: n, tSide: tSide }); };
-    window.handleMove = (n) => { localM = n; document.getElementById('m1').innerText = n; update(ref(db, `rooms/${rID}`), { [isHost?'m1':'m2']: n }); };
-    window.ragequit = () => { update(ref(db, 'rooms/'+rID), {rq: isHost?'p1':'p2', state:'END'}); };
+    
+    window.handleToss = (n) => { playSfx(400, 'sine', 0.1); if(isCPU) return cpuToss(n); update(ref(db, 'rooms/'+rID), { [isHost?'t1':'t2']: n, tSide: tSide }); };
+    
+    window.handleMove = (n) => { 
+        playSfx(400, 'sine', 0.1); 
+        localM = n; 
+        renderMoves(n, -1, -1, false); // Visual feedback
+        if(isCPU) return cpuMove(n); 
+        update(ref(db, `rooms/${rID}`), { [isHost?'m1':'m2']: n }); 
+    };
+    
+    window.ragequit = () => { if(isCPU) location.reload(); else update(ref(db, 'rooms/'+rID), {rq: isHost?'p1':'p2', state:'END'}); };
     window.copyRoom = () => { navigator.clipboard.writeText(rID); document.getElementById('copyBtn').innerText = "COPIED!"; };
 
-    const createGrid = (id, fn) => {
-        const g = document.getElementById(id); g.innerHTML = '';
-        for(let i=0; i<=10; i++){
-            let b = document.createElement('button'); b.innerText = i; b.onclick = () => { playSfx(440, 'sine', 0.1, 0.1); fn(i); }; b.id = `${id}-${i}`; g.appendChild(b);
-        }
-    };
+    const createGrid = (id, fn) => { const g = document.getElementById(id); g.innerHTML = ''; for(let i=0; i<=10; i++){ let b = document.createElement('button'); b.innerText = i; b.onclick = () => fn(i); b.id = `${id}-${i}`; g.appendChild(b); }};
     createGrid('tossGrid', handleToss); createGrid('gameGrid', handleMove);
 </script>
 </body>
